@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#1a3a6b"/>
+<title>KSBC Election 2026 — S S Mittalkod</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --blue:#1a3a6b;--blue2:#2563eb;--blue-light:#eff6ff;
+  --green:#065f46;--green2:#059669;--green-light:#ecfdf5;
+  --red:#991b1b;--red2:#dc2626;--red-light:#fef2f2;
+  --gold:#92400e;--gold2:#d97706;--gold-light:#fffbeb;
+  --gray:#374151;--gray2:#6b7280;--gray3:#d1d5db;--gray4:#f3f4f6;--gray5:#f9fafb;
+  --white:#ffffff;--border:#e5e7eb;
+  --radius:12px;--radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{height:100%;overflow:hidden;background:var(--blue)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;flex-direction:column}
+#app{flex:1;display:flex;flex-direction:column;background:var(--gray5);max-width:480px;margin:0 auto;width:100%;height:100%;overflow:hidden;position:relative}
+
+.hdr{background:var(--blue);padding:env(safe-area-inset-top,10px) 16px 12px;display:flex;align-items:flex-end;justify-content:space-between;flex-shrink:0}
+.hdr-title{color:white;font-size:15px;font-weight:700;letter-spacing:0.02em}
+.hdr-sub{color:rgba(255,255,255,0.65);font-size:11px;margin-top:2px}
+.hdr-box{background:rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.hdr-box-lbl{color:rgba(255,255,255,0.7);font-size:10px}
+.hdr-box-val{color:white;font-size:12px;font-weight:600;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);background:white;border-bottom:1px solid var(--border);flex-shrink:0}
+.stat{padding:10px 4px;text-align:center;border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.stat-v{font-size:22px;font-weight:700;color:var(--gray);line-height:1}
+.stat-v.red{color:var(--red2)}
+.stat-v.green{color:var(--green2)}
+.stat-l{font-size:9px;color:var(--gray2);margin-top:2px;text-transform:uppercase;letter-spacing:0.05em}
+
+.screen{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;display:none;flex-direction:column}
+.screen.active{display:flex}
+
+.mode-badge{margin:10px 12px 0;padding:8px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;text-align:center;letter-spacing:0.05em;text-transform:uppercase}
+.mode-badge.vote{background:var(--blue-light);color:var(--blue2)}
+.mode-badge.inv{background:var(--red-light);color:var(--red2)}
+.display-box{margin:10px 12px 0;background:white;border-radius:var(--radius);border:2.5px solid var(--blue2);padding:12px 16px;text-align:center;transition:border-color 0.15s,background 0.15s;min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.display-box.inv-mode{border-color:var(--red2)}
+.display-box.flash{background:#dcfce7;border-color:var(--green2)}
+.display-box.flash-err{background:var(--red-light);border-color:var(--red2)}
+.disp-lbl{font-size:11px;color:var(--gray2);font-weight:500;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px}
+.disp-val{font-size:54px;font-weight:800;color:var(--gray);line-height:1;letter-spacing:-0.02em;min-height:58px;display:flex;align-items:center;justify-content:center}
+.disp-val.ph{color:var(--gray3);font-size:44px;font-weight:300}
+.disp-name{font-size:12px;font-weight:700;color:var(--blue2);margin-top:3px;min-height:16px;text-align:center;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.disp-name.hidden{color:transparent}
+.feedback{margin:6px 12px 0;min-height:30px;padding:5px 12px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;text-align:center;display:flex;align-items:center;justify-content:center}
+.feedback.ok{background:var(--green-light);color:var(--green)}
+.feedback.err{background:var(--red-light);color:var(--red)}
+.feedback.inv{background:var(--red-light);color:var(--red)}
+.feedback.neutral{background:var(--gray4);color:var(--gray2)}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px 12px}
+.np{height:68px;font-size:28px;font-weight:600;border:none;border-radius:var(--radius);background:white;color:var(--gray);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.1);transition:transform 0.08s,box-shadow 0.08s;-webkit-user-select:none}
+.np:active{transform:scale(0.93);box-shadow:none;background:var(--gray4)}
+.np-del{background:var(--gray4);font-size:24px;color:var(--gray)}
+.np-submit{background:var(--blue2);color:white;font-size:22px;font-weight:700;box-shadow:0 2px 6px rgba(37,99,235,0.4)}
+.np-submit:active{background:#1d4ed8}
+.np-submit.inv-s{background:var(--red2);box-shadow:0 2px 6px rgba(220,38,38,0.4)}
+.act-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 10px}
+.act{height:48px;font-size:12px;font-weight:700;border-radius:var(--radius);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;letter-spacing:0.02em}
+.act:active{transform:scale(0.96)}
+.act-inv{background:var(--red-light);color:var(--red2)}
+.act-inv.on{background:var(--red2);color:white}
+.act-undo{background:var(--gray4);color:var(--gray)}
+
+.results-hdr{padding:12px 16px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.results-hdr h2{font-size:15px;font-weight:700;color:var(--gray)}
+.elected-count{font-size:12px;color:var(--green2);font-weight:600;background:var(--green-light);padding:3px 10px;border-radius:20px}
+.result-row{display:flex;align-items:center;gap:8px;padding:8px 14px;background:white;border-bottom:1px solid var(--border)}
+.result-row.elected{background:#f0fdf4}
+.rank{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.rank.e{background:var(--green2);color:white}
+.rank.n{background:var(--gray4);color:var(--gray2)}
+.res-info{flex:1;min-width:0}
+.res-sl{font-size:16px;font-weight:800;color:var(--gray);line-height:1.1}
+.res-name{font-size:10px;color:var(--gray2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.vote-bar-wrap{flex:1;height:5px;background:var(--gray4);border-radius:4px;overflow:hidden}
+.vote-bar{height:100%;background:var(--blue2);border-radius:4px;transition:width 0.3s}
+.vote-bar.e{background:var(--green2)}
+.vote-count{font-size:15px;font-weight:700;color:var(--gray);min-width:26px;text-align:right}
+.elected-badge{font-size:10px;padding:2px 6px;background:var(--green2);color:white;border-radius:20px;font-weight:600}
+.no-votes{padding:40px 20px;text-align:center;color:var(--gray2);font-size:14px}
+
+.inv-hdr{padding:12px 16px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.inv-hdr h2{font-size:15px;font-weight:700;color:var(--gray)}
+.inv-total{font-size:12px;color:var(--red2);font-weight:600;background:var(--red-light);padding:3px 10px;border-radius:20px}
+.inv-row{display:flex;align-items:center;gap:10px;padding:10px 16px;background:white;border-bottom:1px solid var(--border)}
+.inv-num{font-size:11px;color:var(--gray2);min-width:24px}
+.inv-ballot{font-size:15px;font-weight:700;color:var(--red2);flex:1}
+.inv-dist{font-size:11px;color:var(--gray2)}
+.inv-time{font-size:10px;color:var(--gray3)}
+
+.summary-body{padding:12px;flex:1}
+.sum-card{background:white;border-radius:var(--radius);border:1px solid var(--border);margin-bottom:12px;overflow:hidden}
+.sum-card-hdr{padding:11px 16px;background:var(--blue);color:white;font-size:13px;font-weight:700;letter-spacing:0.03em}
+.sum-card-hdr.red{background:var(--red2)}
+.sum-card-hdr.green{background:var(--green2)}
+.sum-row{display:flex;justify-content:space-between;align-items:center;padding:9px 16px;border-bottom:1px solid var(--border)}
+.sum-row:last-child{border-bottom:none}
+.sum-key{font-size:12px;color:var(--gray);font-weight:500;flex:1;padding-right:8px}
+.sum-val{font-size:13px;font-weight:700;color:var(--gray)}
+.sum-val.green{color:var(--green2)}
+.sum-val.red{color:var(--red2)}
+.sum-val.blue{color:var(--blue2)}
+.export-btn{width:100%;padding:15px;border:none;border-radius:var(--radius);color:white;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.02em;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px}
+.export-btn.pdf{background:#b91c1c}
+.export-btn.txt{background:var(--blue2)}
+.export-btn:active{opacity:0.85;transform:scale(0.98)}
+.reset-btn{width:100%;padding:13px;border:none;border-radius:var(--radius);background:var(--red-light);color:var(--red2);font-size:13px;font-weight:700;cursor:pointer;margin-top:8px}
+.reset-btn:active{background:var(--red2);color:white}
+.dist-list{padding:0 16px 10px}
+.dist-item{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.dist-item:last-child{border-bottom:none}
+.dist-item-name{color:var(--gray);font-weight:500}
+.dist-item-cnt{color:var(--blue2);font-weight:700}
+
+.cands-hdr{padding:10px 14px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:10px}
+.cands-hdr h2{font-size:15px;font-weight:700;color:var(--gray);flex-shrink:0}
+.cand-search{flex:1;padding:7px 12px;border:1.5px solid var(--border);border-radius:20px;font-size:13px;outline:none;font-family:inherit;-webkit-user-select:auto;user-select:auto}
+.cand-search:focus{border-color:var(--blue2)}
+.cand-row{display:flex;align-items:center;gap:10px;padding:9px 16px;background:white;border-bottom:1px solid var(--border)}
+.cand-sl{font-size:15px;font-weight:700;color:var(--blue2);min-width:32px}
+.cand-name{font-size:13px;color:var(--gray);flex:1}
+.cand-votes{font-size:13px;font-weight:700;color:var(--green2);min-width:28px;text-align:right}
+
+.bottom-nav{display:grid;grid-template-columns:repeat(5,1fr);background:white;border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom,0);flex-shrink:0}
+.nav-btn{padding:9px 4px 7px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;border:none;background:none;}
+.nav-icon{font-size:18px;line-height:1}
+.nav-lbl{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--gray2)}
+.nav-btn.active .nav-lbl{color:var(--blue2)}
+.nav-dot{width:4px;height:4px;border-radius:50%;background:transparent;margin-top:1px}
+.nav-btn.active .nav-dot{background:var(--blue2)}
+
+.overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:flex-end;justify-content:center}
+.overlay.show{display:flex}
+.overlay-card{background:white;border-radius:20px 20px 0 0;padding:20px 16px;width:100%;padding-bottom:calc(20px + env(safe-area-inset-bottom,0))}
+.overlay-title{font-size:16px;font-weight:700;color:var(--gray);margin-bottom:14px}
+.overlay-input{width:100%;font-size:18px;padding:13px 16px;border:2px solid var(--border);border-radius:var(--radius);color:var(--gray);font-family:inherit;outline:none;margin-bottom:12px;-webkit-user-select:auto;user-select:auto}
+.overlay-input:focus{border-color:var(--blue2)}
+.ov-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ov-btn{padding:13px;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer}
+.ov-cancel{background:var(--gray4);color:var(--gray)}
+.ov-ok{background:var(--blue2);color:white}
+
+.pdf-overlay{display:none;position:absolute;inset:0;background:rgba(26,58,107,0.92);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.pdf-overlay.show{display:flex}
+.pdf-spin{width:40px;height:40px;border:4px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pdf-msg{color:white;font-size:14px;font-weight:600}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="hdr">
+    <div>
+      <div class="hdr-title">KSBC Election 2026</div>
+      <div class="hdr-sub">149 candidates · 23 seats · 11.03.2026</div>
+    </div>
+    <div class="hdr-box" onclick="openDistOverlay()">
+      <div>
+        <div class="hdr-box-lbl">Current box</div>
+        <div class="hdr-box-val" id="hdr-box-val">Tap to set</div>
+      </div>
+      <span style="color:rgba(255,255,255,0.6);font-size:12px">✎</span>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-v green" id="sv-votes">0</div><div class="stat-l">Votes</div></div>
+    <div class="stat"><div class="stat-v" id="sv-cands">0</div><div class="stat-l">Cands</div></div>
+    <div class="stat"><div class="stat-v red" id="sv-inv">0</div><div class="stat-l">Invalid</div></div>
+    <div class="stat"><div class="stat-v" id="sv-boxes">0</div><div class="stat-l">Boxes</div></div>
+  </div>
+
+  <!-- VOTE SCREEN -->
+  <div class="screen active" id="screen-vote">
+    <div class="mode-badge vote" id="mode-badge">First Preference — Vote Entry</div>
+    <div class="display-box" id="disp-box">
+      <div class="disp-lbl" id="disp-lbl">SL Number</div>
+      <div class="disp-val ph" id="disp-val">—</div>
+      <div class="disp-name hidden" id="disp-name">—</div>
+    </div>
+    <div class="feedback neutral" id="feedback">Set a district / box then start entering</div>
+    <div class="numpad">
+      <button class="np" ontouchstart="" onclick="numpad(7)">7</button>
+      <button class="np" ontouchstart="" onclick="numpad(8)">8</button>
+      <button class="np" ontouchstart="" onclick="numpad(9)">9</button>
+      <button class="np" ontouchstart="" onclick="numpad(4)">4</button>
+      <button class="np" ontouchstart="" onclick="numpad(5)">5</button>
+      <button class="np" ontouchstart="" onclick="numpad(6)">6</button>
+      <button class="np" ontouchstart="" onclick="numpad(1)">1</button>
+      <button class="np" ontouchstart="" onclick="numpad(2)">2</button>
+      <button class="np" ontouchstart="" onclick="numpad(3)">3</button>
+      <button class="np np-del" ontouchstart="" onclick="del()">⌫</button>
+      <button class="np" ontouchstart="" onclick="numpad(0)">0</button>
+      <button class="np np-submit" id="np-go" ontouchstart="" onclick="submit()">✓</button>
+    </div>
+    <div class="act-row">
+      <button class="act act-inv" id="inv-toggle" onclick="toggleInvMode()">✕ &nbsp;INVALID BALLOT</button>
+      <button class="act act-undo" onclick="undoLast()">↩ &nbsp;UNDO</button>
+    </div>
+  </div>
+
+  <!-- RESULTS SCREEN -->
+  <div class="screen" id="screen-results" style="overflow-y:auto">
+    <div class="results-hdr">
+      <h2>Live Leaderboard</h2>
+      <span class="elected-count" id="elected-count">0 / 23 elected</span>
+    </div>
+    <div id="results-list"><div class="no-votes">No votes recorded yet.<br/>Enter votes in the Vote tab.</div></div>
+  </div>
+
+  <!-- INVALID SCREEN -->
+  <div class="screen" id="screen-invalid" style="overflow-y:auto">
+    <div class="inv-hdr">
+      <h2>Invalid Ballots</h2>
+      <span class="inv-total" id="inv-total-badge">0 total</span>
+    </div>
+    <div id="inv-list"><div class="no-votes">No invalid ballots recorded.</div></div>
+  </div>
+
+  <!-- SUMMARY SCREEN -->
+  <div class="screen" id="screen-summary">
+    <div class="summary-body">
+      <div class="sum-card">
+        <div class="sum-card-hdr">Overall Summary</div>
+        <div class="sum-row"><span class="sum-key">Total valid votes</span><span class="sum-val blue" id="sum-votes">0</span></div>
+        <div class="sum-row"><span class="sum-key">Total invalid ballots</span><span class="sum-val red" id="sum-inv">0</span></div>
+        <div class="sum-row"><span class="sum-key">Candidates with votes</span><span class="sum-val" id="sum-cands">0</span></div>
+        <div class="sum-row"><span class="sum-key">Boxes counted</span><span class="sum-val" id="sum-boxes">0</span></div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-card-hdr green">Elected Candidates (Top 23)</div>
+        <div id="sum-elected-list"><div style="padding:14px 16px;color:var(--gray2);font-size:13px">No results yet</div></div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-card-hdr">Votes by District / Box</div>
+        <div class="dist-list" id="sum-dist-list"><div style="padding:8px 0;color:var(--gray2);font-size:13px">No districts set</div></div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-card-hdr red">Invalid Ballot Numbers</div>
+        <div id="sum-inv-list"><div style="padding:14px 16px;color:var(--gray2);font-size:13px">None recorded</div></div>
+      </div>
+      <button class="export-btn pdf" onclick="generatePDF()">📄 &nbsp;Export Full PDF Report</button>
+      <button class="export-btn txt" onclick="exportSummary()" style="margin-top:8px">📋 &nbsp;Copy Text Summary</button>
+      <button class="reset-btn" onclick="confirmReset()">Reset All Data</button>
+    </div>
+  </div>
+
+  <!-- CANDIDATES SCREEN -->
+  <div class="screen" id="screen-cands" style="overflow-y:auto">
+    <div class="cands-hdr">
+      <h2>All 149 Candidates</h2>
+      <input class="cand-search" id="cand-search" type="search" placeholder="Search name / SL…" oninput="renderCands()" />
+    </div>
+    <div id="cands-list"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-btn active" id="nav-vote" onclick="showScreen('vote')">
+      <div class="nav-icon">🗳️</div><div class="nav-lbl">Vote</div><div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn" id="nav-results" onclick="showScreen('results')">
+      <div class="nav-icon">🏆</div><div class="nav-lbl">Results</div><div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn" id="nav-invalid" onclick="showScreen('invalid')">
+      <div class="nav-icon">✕</div><div class="nav-lbl">Invalid</div><div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn" id="nav-summary" onclick="showScreen('summary')">
+      <div class="nav-icon">📋</div><div class="nav-lbl">Summary</div><div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn" id="nav-cands" onclick="showScreen('cands')">
+      <div class="nav-icon">👥</div><div class="nav-lbl">Cands</div><div class="nav-dot"></div>
+    </button>
+  </div>
+
+  <!-- DISTRICT OVERLAY -->
+  <div class="overlay" id="dist-overlay" onclick="closeDistOverlay(event)">
+    <div class="overlay-card" onclick="event.stopPropagation()">
+      <div class="overlay-title">Set District / Box Name</div>
+      <input class="overlay-input" id="dist-input" type="text" placeholder="e.g. Bengaluru Urban" onkeydown="if(event.key==='Enter')saveDist()"/>
+      <div class="ov-btns">
+        <button class="ov-btn ov-cancel" onclick="closeDistOverlay()">Cancel</button>
+        <button class="ov-btn ov-ok" onclick="saveDist()">Set Box</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF OVERLAY -->
+  <div class="pdf-overlay" id="pdf-overlay">
+    <div class="pdf-spin"></div>
+    <div class="pdf-msg">Generating PDF…</div>
+  </div>
+
+</div>
+
+<script>
+// ── ALL 149 CANDIDATES — KSBC Election 2026 ──
+var CANDIDATES = {
+  1:  'ABHIJITH M M',
+  2:  'ALGUR USMAN BASHA MULAKSAHEB',
+  3:  'ANANDA KUMAR S',
+  4:  'ANIL J K',
+  5:  'ANUPAMA H S',
+  6:  'APPAJI GOWDA C',
+  7:  'ARUNDHATI Y',
+  8:  'ASIF ALI SHAIK HUSSAIN',
+  9:  'BADARINARAYANA M S',
+  10: 'BAGALI SANTOSHKUMAR BASAPPA',
+  11: 'BAGEWADI CHANNABASAPPA BASAVANNAPPA',
+  12: 'BALAKRISHNA N S',
+  13: 'BASAVARAJ S',
+  14: 'BHARATH L',
+  15: 'BHOJRAJ K L',
+  16: 'BIRADAR NAGARAJ MALLANAGOUDA',
+  17: 'CHANAGOND DANAPPA ANNARAY',
+  18: 'CHANDRA SEKHAR H',
+  19: 'CHANDRAKALA S',
+  20: 'CHANDRASHEKAR M S',
+  21: 'CHANNAPATTAN REHANA ISMAIL',
+  22: 'DEEKSHA AMRUTHESH',
+  23: 'DESAI RAJENDRA CHANDRASHEKAR',
+  24: 'DEVARAJA M',
+  25: 'DHANANJAYA C M',
+  26: 'DILEEP KUMAR M C',
+  27: 'DILIP KUMAR I S',
+  28: 'DILSHAD UNNISA',
+  29: 'DURGA PRASAD H R',
+  30: 'GEETHA RAJ',
+  31: 'GOPAL',
+  32: 'GOUTAM CHAND S F',
+  33: 'GOWRAMMA M',
+  34: 'GUPTALING S PATIL',
+  35: 'HARISH S',
+  36: 'HEMA KARIYAPPA GOWDA',
+  37: 'HIMANAND D C',
+  38: 'JAFARSHARIF ANGADI',
+  39: 'JAVAGAL CHANDRASHEKHAR PUTTAPPA',
+  40: 'JAYALAKSHMI H GOWDA',
+  41: 'JAYALAKSHMI M',
+  42: 'JAYAPRAKASH K',
+  43: 'JYOTI MALAKAJAPPA MARADI',
+  44: 'KADIRAPPA NAYAKA',
+  45: 'KALPANA P V',
+  46: 'KAMADOLLI MANJULADEVI RAMAPPA',
+  47: 'KAMARADDI VENKARADDI DEVARADDI',
+  48: 'KAPANIGOWDA',
+  49: 'KIVADASANNAVAR SHIVAPPA SADEPPA',
+  50: 'KIWAD KALMESHWAR TUKARAM',
+  51: 'KORIMATH BASAVANNAYYA VIRUPAKSHAYYA',
+  52: 'KOTESWAR RAO K',
+  53: 'KWARI MUTTAPPA HANAMANTAPPA',
+  54: 'LAKSHMANA J N',
+  55: 'LOKESH B N',
+  56: 'LOKESH V NAYAKA',
+  57: 'MADHUSUDHAN M N',
+  58: 'MAGADUM ANANDKUMAR APPU',
+  59: 'MAHADEVA PRASAD K S',
+  60: 'MAHADEVASWAMY M',
+  61: 'MALLIKARJUN GADAGAYYA BHRUNGIMATH',
+  62: 'MAMATHA J',
+  63: 'MANGALEKAR VINAY BALASAHEB',
+  64: 'MANJULA L REDDY',
+  65: 'MANJULA P',
+  66: 'MANJULA DEVI R',
+  67: 'MANJULA CHANDRASHEKHAR ANEGUNDI',
+  68: 'MANJUNATH D',
+  69: 'MANJUNATHA N BYRAREDDY',
+  70: 'MARICHANNAMMA',
+  71: 'MARIYAPPA H',
+  72: 'MEERA RAGHAVENDRA',
+  73: 'MITTALAKOD SHIDLINGAPPA SHEKHARAPPA',
+  74: 'MOHAMMEDSA A MULLA',
+  75: 'MULLUR SHANTA BALAPPA',
+  76: 'MURALIDHARA S',
+  77: 'NADAF MEERA HUSSENASAB',
+  78: 'NAGARAJ V NAYAK',
+  79: 'NARAYANA SWAMY G',
+  80: 'NATARAJA K V',
+  81: 'NAVEENA M S',
+  82: 'PADMA N R',
+  83: 'PADMA PRASAD HEGDE @ P P HEGDE',
+  84: 'PATIL ISHWAR MALLAPPA',
+  85: 'PATIL SHIDDANAGOUDA VEERABHADRAGOUDA',
+  86: 'PATIL SUMITA BABAGOUDA',
+  87: 'PATIL VINOD SHANKARGOUDA',
+  88: 'POORNIMA S',
+  89: 'PRABHU V',
+  90: 'PRUTHVIRAJ P HITTALAMANI',
+  91: 'PUTTASIDDE GOWDA',
+  92: 'PUTTASWAMY',
+  93: 'PUTTE GOWDA',
+  94: 'RAGHAVENDRA H S',
+  95: 'RAGHAVENDRA BHEEMACHAR',
+  96: 'RAHAMATHULLA KOTHWAL',
+  97: 'RAJANNA R',
+  98: 'RAJENDRA M A',
+  99: 'RAJESHA M',
+  100: 'RAJU KORAHALLI',
+  101: 'RAMA MOORTHY B V',
+  102: 'RAMANA GOWDA H K',
+  103: 'RAMESH NARASAPPA',
+  104: 'RAVIKUMAR S PATTADAKAL',
+  105: 'RAVINDRANATHA KAMATH N',
+  106: 'REKHA B R',
+  107: 'SALOMON ALFRED',
+  108: 'SANDHYA BASAVAREDDY MADINUR',
+  109: 'SANDHYA U PRABHU',
+  110: 'SANGOLI NAGANNA',
+  111: 'SATHISH CHANDRA GOWDA R',
+  112: 'SATHYA SHREE B J G',
+  113: 'SAVADATTI SHILPA RAJSHEKHAR',
+  114: 'SHAIK ISMAIL ZABIULLA',
+  115: 'SHAILAJA K',
+  116: 'SHAKUNTHALA',
+  117: 'SHANMUKHASWAMY K',
+  118: 'SHARADA H V',
+  119: 'SHEKARA J P',
+  120: 'SHIVA KUMAR N',
+  121: 'SHIVAMURTHY',
+  122: 'SHIVANAND',
+  123: 'SHIVARAJ PATIL',
+  124: 'SHIVARAMU H C',
+  125: 'SHUBHASHREE B K',
+  126: 'SHYAMALA BHANDARY',
+  127: 'SIDDALINGA SHIVASHARANAPPA',
+  128: 'SRIDHARA T',
+  129: 'SRIKANTH PATIL K',
+  130: 'SRINIVAS B V',
+  131: 'SRINIVAS KUMAR',
+  132: 'SRINIVASA MURTHY N',
+  133: 'SRINIVASA T',
+  134: 'SUBHASH KOWDICHAR',
+  135: 'SUMA SANNEGOWDA',
+  136: 'SURESHA N',
+  137: 'SURKOD SUVARNA BASAPPA',
+  138: 'THIPPESWAMY T',
+  139: 'TOTAD PUTTANAGOUDA HANUMANTHAGOUDA',
+  140: 'UMESH S',
+  141: 'VEDHA',
+  142: 'VEENA K N',
+  143: 'VEERABHADRAPPA',
+  144: 'VENKATA REDDY T M',
+  145: 'VENKATARAMA REDDY K',
+  146: 'VENKATESHA DODDERI H',
+  147: 'VIDYA RANI V',
+  148: 'VIJAYALAKSHMI',
+  149: 'VISHWANATHA K P'
+};
+
+// ── State ──
+var votes = {}, invalidBallots = [], log = [], dists = {}, distOrder = [], distVotes = {};
+var curDist = '', curVal = '', invMode = false;
+
+try {
+  var saved = localStorage.getItem('ksbc2026_v3');
+  if (saved) {
+    var d = JSON.parse(saved);
+    votes = d.votes || {};
+    invalidBallots = (d.invalidBallots || []).map(function(e){e.time=new Date(e.time);return e;});
+    log = (d.log || []).map(function(e){e.time=new Date(e.time);return e;});
+    dists = d.dists || {};
+    distOrder = d.distOrder || [];
+    distVotes = d.distVotes || {};
+    curDist = d.curDist || '';
+    if (curDist) document.getElementById('hdr-box-val').textContent = curDist;
+  }
+} catch(e) {}
+
+function save() {
+  try { localStorage.setItem('ksbc2026_v3', JSON.stringify({votes,invalidBallots,log,dists,distOrder,distVotes,curDist})); } catch(e){}
+}
+
+function getCandName(sl) { return CANDIDATES[sl] || ''; }
+
+// ── District ──
+function openDistOverlay() {
+  document.getElementById('dist-overlay').classList.add('show');
+  setTimeout(function(){document.getElementById('dist-input').focus();},150);
+}
+function closeDistOverlay(e) { document.getElementById('dist-overlay').classList.remove('show'); }
+function saveDist() {
+  var v = document.getElementById('dist-input').value.trim();
+  if (!v) return;
+  curDist = v;
+  if (!dists[v]) { dists[v] = 0; distOrder.push(v); }
+  if (!distVotes[v]) distVotes[v] = {};
+  document.getElementById('hdr-box-val').textContent = v;
+  document.getElementById('dist-input').value = '';
+  closeDistOverlay();
+  setFb('Box set: ' + v, 'neutral');
+  save(); render();
+}
+
+// ── Mode ──
+function toggleInvMode() {
+  invMode = !invMode; curVal = '';
+  var db=document.getElementById('disp-box'), dv=document.getElementById('disp-val'),
+      dl=document.getElementById('disp-lbl'), dn=document.getElementById('disp-name'),
+      mb=document.getElementById('mode-badge'), it=document.getElementById('inv-toggle'),
+      go=document.getElementById('np-go');
+  dv.textContent='—'; dv.className='disp-val ph';
+  dn.textContent=''; dn.className='disp-name hidden';
+  if (invMode) {
+    db.className='display-box inv-mode'; dl.textContent='Ballot Number';
+    mb.textContent='Invalid Ballot — Enter Ballot No.'; mb.className='mode-badge inv';
+    it.className='act act-inv on'; it.innerHTML='✕ &nbsp;CANCEL INVALID';
+    go.className='np np-submit inv-s'; setFb('Enter ballot number → press ✓','inv');
+  } else {
+    db.className='display-box'; dl.textContent='SL Number';
+    mb.textContent='First Preference — Vote Entry'; mb.className='mode-badge vote';
+    it.className='act act-inv'; it.innerHTML='✕ &nbsp;INVALID BALLOT';
+    go.className='np np-submit'; setFb('Vote mode — enter SL number','neutral');
+  }
+}
+
+// ── Numpad ──
+function numpad(d) {
+  var max = invMode ? 7 : 3;
+  if (curVal.length >= max) return;
+  curVal += d;
+  var el=document.getElementById('disp-val'), dn=document.getElementById('disp-name');
+  el.textContent=curVal; el.className='disp-val';
+  if (!invMode) {
+    var sl=parseInt(curVal), name=getCandName(sl);
+    if (name) { dn.textContent=name; dn.className='disp-name'; }
+    else if (sl>=1&&sl<=149) { dn.textContent='SL '+sl; dn.className='disp-name'; }
+    else { dn.textContent=''; dn.className='disp-name hidden'; }
+    if (curVal.length===3) {
+      if (sl>=100&&sl<=149) { submit(); }
+      else if (sl>149) { setFb('⚠ Max SL is 149','err'); curVal=''; clearDisp(); }
+    }
+  } else { dn.textContent=''; dn.className='disp-name hidden'; }
+}
+
+function del() {
+  curVal=curVal.slice(0,-1);
+  var el=document.getElementById('disp-val'), dn=document.getElementById('disp-name');
+  if (curVal) {
+    el.textContent=curVal; el.className='disp-val';
+    if (!invMode) {
+      var sl=parseInt(curVal), name=getCandName(sl);
+      dn.textContent=name||('SL '+curVal); dn.className='disp-name';
+    }
+  } else { el.textContent='—'; el.className='disp-val ph'; dn.textContent=''; dn.className='disp-name hidden'; }
+}
+
+function submit() {
+  if (!curDist) { setFb('⚠ Set a district / box first!','err'); curVal=''; clearDisp(); return; }
+  if (invMode) {
+    if (!curVal) { setFb('⚠ Enter ballot number','err'); return; }
+    invalidBallots.unshift({ballot:curVal,dist:curDist,time:new Date()});
+    log.unshift({type:'inv',ballot:curVal,dist:curDist,time:new Date()});
+    dists[curDist]=(dists[curDist]||0)+1;
+    setFb('✕  INVALID — Ballot No: '+curVal,'inv');
+    curVal=''; clearDisp(); flashDisp('err'); save(); render(); return;
+  }
+  var sl=parseInt(curVal);
+  if (isNaN(sl)||sl<1||sl>149) { setFb('⚠ SL No must be 1 – 149','err'); curVal=''; clearDisp(); return; }
+  votes[sl]=(votes[sl]||0)+1;
+  dists[curDist]=(dists[curDist]||0)+1;
+  if (!distVotes[curDist]) distVotes[curDist]={};
+  distVotes[curDist][sl]=(distVotes[curDist][sl]||0)+1;
+  log.unshift({type:'vote',sl:sl,dist:curDist,time:new Date()});
+  var name=getCandName(sl);
+  setFb('✓  SL '+sl+' · '+name+'  ('+curDist+')','ok');
+  curVal=''; clearDisp(); flashDisp('ok'); save(); render();
+}
+
+function clearDisp() {
+  document.getElementById('disp-val').textContent='—';
+  document.getElementById('disp-val').className='disp-val ph';
+  document.getElementById('disp-name').textContent='';
+  document.getElementById('disp-name').className='disp-name hidden';
+}
+function flashDisp(type) {
+  var db=document.getElementById('disp-box'), orig=invMode?'display-box inv-mode':'display-box';
+  db.className='display-box '+(type==='ok'?'flash':'flash-err');
+  setTimeout(function(){db.className=orig;},300);
+}
+function setFb(msg,type) {
+  var el=document.getElementById('feedback');
+  el.textContent=msg; el.className='feedback '+(type||'neutral');
+}
+function undoLast() {
+  if (!log.length) { setFb('Nothing to undo','err'); return; }
+  var l=log.shift();
+  if (l.type==='vote') {
+    votes[l.sl]--; if (votes[l.sl]<=0) delete votes[l.sl];
+    if (distVotes[l.dist]&&distVotes[l.dist][l.sl]) { distVotes[l.dist][l.sl]--; if (distVotes[l.dist][l.sl]<=0) delete distVotes[l.dist][l.sl]; }
+    setFb('↩ Undone: SL '+l.sl+' · '+getCandName(l.sl),'neutral');
+  } else {
+    if (invalidBallots.length) invalidBallots.shift();
+    setFb('↩ Undone: Invalid ballot '+l.ballot,'neutral');
+  }
+  dists[l.dist]=Math.max(0,(dists[l.dist]||1)-1);
+  curVal=''; clearDisp(); save(); render();
+}
+
+function getBoard() {
+  return Object.entries(votes).map(function(e){return{sl:parseInt(e[0]),v:e[1]};}).sort(function(a,b){return b.v-a.v||a.sl-b.sl;});
+}
+
+function render() {
+  var board=getBoard();
+  var totalVotes=log.filter(function(l){return l.type==='vote';}).length;
+  var totalInv=invalidBallots.length;
+  var boxCount=Object.keys(dists).filter(function(k){return dists[k]>0;}).length;
+  document.getElementById('sv-votes').textContent=totalVotes;
+  document.getElementById('sv-cands').textContent=board.length;
+  document.getElementById('sv-inv').textContent=totalInv;
+  document.getElementById('sv-boxes').textContent=boxCount;
+  renderResults(board); renderInvalid(); renderSummary(board,totalVotes,totalInv,boxCount);
+}
+
+function renderResults(board) {
+  var ec=Math.min(board.length,23);
+  document.getElementById('elected-count').textContent=ec+' / 23 elected';
+  if (!board.length) { document.getElementById('results-list').innerHTML='<div class="no-votes">No votes recorded yet.<br/>Enter votes in the Vote tab.</div>'; return; }
+  var maxV=board[0].v||1, html='';
+  board.forEach(function(c,i) {
+    var rank=i+1, el=rank<=23, name=getCandName(c.sl);
+    html+='<div class="result-row'+(el?' elected':'')+'"><div class="rank '+(el?'e':'n')+'">'+rank+'</div>'
+      +'<div class="res-info"><div class="res-sl">SL '+c.sl+'</div><div class="res-name">'+name+'</div></div>'
+      +'<div class="vote-bar-wrap"><div class="vote-bar'+(el?' e':'')+'" style="width:'+Math.round((c.v/maxV)*100)+'%"></div></div>'
+      +'<div class="vote-count">'+c.v+'</div>'+(el?'<div class="elected-badge">✓</div>':'')+'</div>';
+  });
+  document.getElementById('results-list').innerHTML=html;
+}
+
+function renderInvalid() {
+  document.getElementById('inv-total-badge').textContent=invalidBallots.length+' total';
+  if (!invalidBallots.length) { document.getElementById('inv-list').innerHTML='<div class="no-votes">No invalid ballots recorded.</div>'; return; }
+  var html='';
+  invalidBallots.forEach(function(e,i) {
+    var t=e.time, ts=(t.getHours()<10?'0':'')+t.getHours()+':'+(t.getMinutes()<10?'0':'')+t.getMinutes();
+    html+='<div class="inv-row"><div class="inv-num">'+(i+1)+'.</div><div class="inv-ballot">Ballot '+e.ballot+'</div><div class="inv-dist">'+e.dist+'</div><div class="inv-time">'+ts+'</div></div>';
+  });
+  document.getElementById('inv-list').innerHTML=html;
+}
+
+function renderSummary(board,totalVotes,totalInv,boxCount) {
+  document.getElementById('sum-votes').textContent=totalVotes;
+  document.getElementById('sum-inv').textContent=totalInv;
+  document.getElementById('sum-cands').textContent=board.length;
+  document.getElementById('sum-boxes').textContent=boxCount;
+  var top=board.slice(0,23);
+  if (!top.length) {
+    document.getElementById('sum-elected-list').innerHTML='<div style="padding:14px 16px;color:var(--gray2);font-size:13px">No results yet</div>';
+  } else {
+    var html='';
+    top.forEach(function(c,i){
+      html+='<div class="sum-row"><span class="sum-key">'+(i+1)+'. SL '+c.sl+' — '+getCandName(c.sl)+'</span><span class="sum-val green">'+c.v+'</span></div>';
+    });
+    document.getElementById('sum-elected-list').innerHTML=html;
+  }
+  if (!distOrder.length) {
+    document.getElementById('sum-dist-list').innerHTML='<div style="padding:8px 0;color:var(--gray2);font-size:13px">No districts set</div>';
+  } else {
+    var html2='';
+    distOrder.forEach(function(d){html2+='<div class="dist-item"><span class="dist-item-name">'+d+'</span><span class="dist-item-cnt">'+(dists[d]||0)+' entries</span></div>';});
+    document.getElementById('sum-dist-list').innerHTML=html2;
+  }
+  if (!invalidBallots.length) {
+    document.getElementById('sum-inv-list').innerHTML='<div style="padding:14px 16px;color:var(--gray2);font-size:13px">None recorded</div>';
+  } else {
+    var nums=invalidBallots.map(function(e){return e.ballot;}).join(', ');
+    document.getElementById('sum-inv-list').innerHTML='<div style="padding:12px 16px;font-size:13px;color:var(--red2);font-weight:500;word-break:break-all;line-height:1.7">'+nums+'</div>';
+  }
+}
+
+function renderCands() {
+  var q=(document.getElementById('cand-search').value||'').toLowerCase(), html='';
+  for (var sl=1;sl<=149;sl++) {
+    var name=CANDIDATES[sl]||'';
+    if (q&&!(String(sl).includes(q)||name.toLowerCase().includes(q))) continue;
+    var v=votes[sl]||0;
+    html+='<div class="cand-row"><div class="cand-sl">'+sl+'</div><div class="cand-name">'+name+'</div>'+(v?'<div class="cand-votes">'+v+'</div>':'')+'</div>';
+  }
+  document.getElementById('cands-list').innerHTML=html||'<div class="no-votes">No match found.</div>';
+}
+
+function showScreen(name) {
+  ['vote','results','invalid','summary','cands'].forEach(function(s){
+    document.getElementById('screen-'+s).classList.toggle('active',s===name);
+    document.getElementById('nav-'+s).classList.toggle('active',s===name);
+  });
+  if (name==='results'||name==='summary'||name==='invalid') render();
+  if (name==='cands') renderCands();
+}
+
+// ── Text Export ──
+function exportSummary() {
+  var board=getBoard(), totalVotes=log.filter(function(l){return l.type==='vote';}).length;
+  var lines=['KARNATAKA STATE BAR COUNCIL ELECTION 2026 — COUNT SUMMARY',
+    'Date: '+new Date().toLocaleDateString('en-IN'),'Generated: '+new Date().toLocaleTimeString('en-IN'),'',
+    'OVERALL','Total valid votes: '+totalVotes,'Total invalid ballots: '+invalidBallots.length,'',
+    'ELECTED CANDIDATES (TOP 23)'];
+  board.slice(0,23).forEach(function(c,i){lines.push((i+1)+'. SL '+c.sl+' — '+getCandName(c.sl)+' — '+c.v+' votes');});
+  lines.push('','VOTES BY DISTRICT/BOX');
+  distOrder.forEach(function(d){lines.push(d+': '+(dists[d]||0)+' entries');});
+  if (invalidBallots.length) {
+    lines.push('','INVALID BALLOTS ('+invalidBallots.length+')');
+    invalidBallots.forEach(function(e,i){lines.push((i+1)+'. Ballot No: '+e.ballot+' | '+e.dist);});
+  }
+  var text=lines.join('\n');
+  if (navigator.clipboard&&navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function(){alert('Summary copied!');}).catch(function(){fallbackCopy(text);});
+  } else { fallbackCopy(text); }
+}
+function fallbackCopy(text) {
+  var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{document.execCommand('copy');alert('Summary copied!');}catch(e){alert('Here:\n\n'+text);}
+  document.body.removeChild(ta);
+}
+
+// ── PDF Export ──
+function generatePDF() {
+  document.getElementById('pdf-overlay').classList.add('show');
+  setTimeout(function(){try{_doPDF();}catch(e){document.getElementById('pdf-overlay').classList.remove('show');alert('PDF error: '+e.message);}},120);
+}
+
+function _doPDF() {
+  var {jsPDF}=window.jspdf;
+  var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  var board=getBoard();
+  var totalVotes=log.filter(function(l){return l.type==='vote';}).length;
+  var now=new Date();
+  var dateStr=now.toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+  var timeStr=now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  var pageW=210, pageH=297, mL=12, mR=12, cW=210-12-12;
+  var y=0;
+
+  // Column X positions (matching sample PDF layout)
+  var cRank=mL+3, cSL=mL+18, cName=mL+30, cVotes=mL+148, cStatus=mL+168;
+
+  function addWatermark() {
+    doc.saveGraphicsState();
+    doc.setGState(new doc.GState({opacity:0.06}));
+    doc.setFontSize(38); doc.setFont(undefined,'bold'); doc.setTextColor(26,58,107);
+    doc.text('S S MITTALKOD',pageW/2,pageH/2,{align:'center',angle:40});
+    doc.restoreGraphicsState();
+  }
+
+  function drawBookmarkStamp() {
+    // Bright red bookmark stamp top-right corner
+    var bx=pageW-mR-36, by=0, bw=36, bh=14;
+    doc.setFillColor(220,38,38);
+    doc.rect(bx,by,bw,bh,'F');
+    // Triangle notch at bottom
+    doc.setFillColor(255,255,255);
+    doc.triangle(bx,bh, bx+bw,bh, bx+bw/2,bh+5,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(6.5); doc.setFont(undefined,'bold');
+    doc.text('S S MITTALKOD',bx+bw/2,by+5.5,{align:'center'});
+    doc.setFontSize(5.5); doc.setFont(undefined,'normal');
+    doc.text('KSBC Election 2026',bx+bw/2,by+10,{align:'center'});
+    doc.setTextColor(0);
+  }
+
+  function newPage() {
+    doc.addPage();
+    addWatermark();
+    drawBookmarkStamp();
+    y=18;
+    // Running header
+    doc.setFillColor(26,58,107); doc.rect(0,0,pageW,12,'F');
+    doc.setTextColor(255); doc.setFontSize(7); doc.setFont(undefined,'bold');
+    doc.text('KSBC ELECTION 2026 — OFFICIAL VOTE COUNT REPORT',mL,7.5);
+    doc.setFont(undefined,'normal');
+    doc.text('Generated: '+dateStr+' '+timeStr,pageW-mR,7.5,{align:'right'});
+    doc.setTextColor(0);
+  }
+  function chk(need) { if (y+need>pageH-16) newPage(); }
+
+  // ── PAGE 1: Cover / Title ──
+  addWatermark();
+  drawBookmarkStamp();
+
+  // Big gradient-style title block
+  doc.setFillColor(26,58,107);
+  doc.rect(0,0,pageW,52,'F');
+  // Accent line
+  doc.setFillColor(234,179,8);
+  doc.rect(0,50,pageW,3,'F');
+
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(17); doc.setFont(undefined,'bold');
+  doc.text('KARNATAKA STATE BAR COUNCIL',pageW/2,14,{align:'center'});
+  doc.setFontSize(14);
+  doc.text('ELECTION 2026',pageW/2,23,{align:'center'});
+  doc.setFontSize(9); doc.setFont(undefined,'normal');
+  doc.text('Official Vote Count Report — First Preference Counting',pageW/2,31.5,{align:'center'});
+  doc.setFontSize(8);
+  doc.text('23 Members to be Elected  |  Total Candidates: 149  |  Election Date: 11.03.2026',pageW/2,39,{align:'center'});
+  doc.setTextColor(253,224,71); doc.setFontSize(8.5); doc.setFont(undefined,'bold');
+  doc.text('Report Generated: '+dateStr+'  at  '+timeStr,pageW/2,47,{align:'center'});
+  doc.setTextColor(0);
+  y=60;
+
+  // Summary stats row
+  var sBoxW=cW/4;
+  var stats=[
+    {lbl:'VALID VOTES',val:String(totalVotes),col:[37,99,235]},
+    {lbl:'INVALID BALLOTS',val:String(invalidBallots.length),col:[185,28,28]},
+    {lbl:'CANDIDATES VOTED',val:String(Object.keys(votes).filter(function(k){return votes[k]>0;}).length),col:[124,45,18]},
+    {lbl:'BOXES COUNTED',val:String(distOrder.length),col:[5,150,105]}
+  ];
+  stats.forEach(function(s,i){
+    var sx=mL+i*sBoxW;
+    doc.setFillColor(s.col[0],s.col[1],s.col[2]);
+    doc.rect(sx,y,sBoxW-2,20,'F');
+    doc.setTextColor(255);
+    doc.setFontSize(18); doc.setFont(undefined,'bold');
+    doc.text(s.val,sx+sBoxW/2-1,y+12,{align:'center'});
+    doc.setFontSize(6); doc.setFont(undefined,'bold');
+    doc.text(s.lbl,sx+sBoxW/2-1,y+18,{align:'center'});
+  });
+  doc.setTextColor(0);
+  y+=26;
+
+  // ── ELECTED TOP 23 — styled like sample ──
+  chk(14);
+  // Section header
+  doc.setFillColor(5,150,105); doc.rect(mL,y,cW,9,'F');
+  doc.setTextColor(255); doc.setFontSize(11); doc.setFont(undefined,'bold');
+  doc.text('★  ELECTED CANDIDATES — TOP 23  ★',pageW/2,y+6,{align:'center'});
+  doc.setTextColor(0); y+=10;
+
+  // Column headers
+  chk(7);
+  doc.setFillColor(209,250,229); doc.rect(mL,y,cW,6.5,'F');
+  doc.setFontSize(7.5); doc.setFont(undefined,'bold'); doc.setTextColor(5,90,46);
+  doc.text('Rank',cRank,y+4.5);
+  doc.text('SL No.',cSL,y+4.5);
+  doc.text('Candidate Name',cName,y+4.5);
+  doc.text('Total Votes',cVotes,y+4.5);
+  doc.text('Status',cStatus,y+4.5);
+  doc.setTextColor(0); y+=7;
+
+  board.slice(0,23).forEach(function(c,i){
+    chk(7);
+    // Alternating rows
+    doc.setFillColor(i%2===0?240:248, i%2===0?253:255, i%2===0?244:251);
+    doc.rect(mL,y,cW,6.5,'F');
+
+    // Bright rank badge
+    var rankColors=[[22,101,52],[21,128,61],[22,163,74]];
+    var rc=rankColors[Math.min(i,2)];
+    doc.setFillColor(rc[0],rc[1],rc[2]);
+    doc.roundedRect(cRank-1,y+0.8,9,5,1.5,1.5,'F');
+    doc.setFontSize(8); doc.setFont(undefined,'bold'); doc.setTextColor(255);
+    doc.text(String(i+1),cRank+3.5,y+4.8,{align:'center'});
+
+    doc.setTextColor(30,80,50); doc.setFontSize(8); doc.setFont(undefined,'bold');
+    doc.text(String(c.sl),cSL,y+4.5);
+    var nm=getCandName(c.sl); if(nm.length>46)nm=nm.substring(0,45)+'…';
+    doc.setFontSize(8); doc.setTextColor(20,50,20);
+    doc.text(nm,cName,y+4.5);
+
+    // Vote count in bright green
+    doc.setFontSize(9.5); doc.setFont(undefined,'bold'); doc.setTextColor(5,120,50);
+    doc.text(String(c.v),cVotes+8,y+5,{align:'right'});
+
+    // Elected badge
+    doc.setFillColor(21,128,61); doc.roundedRect(cStatus,y+1,20,4.5,1.2,1.2,'F');
+    doc.setFontSize(6); doc.setTextColor(255);
+    doc.text('✓ ELECTED',cStatus+10,y+4.3,{align:'center'});
+    doc.setTextColor(0); doc.setFont(undefined,'normal'); y+=6.8;
+  });
+
+  // ── ALL CANDIDATES — Full Ranked Table ──
+  y+=6; chk(14);
+  doc.setFillColor(26,58,107); doc.rect(mL,y,cW,9,'F');
+  doc.setTextColor(255); doc.setFontSize(10); doc.setFont(undefined,'bold');
+  doc.text('COMPLETE RESULTS — ALL 149 CANDIDATES (Ranked by Votes)',mL+4,y+6);
+  doc.setTextColor(0); y+=10;
+
+  chk(7);
+  doc.setFillColor(219,234,254); doc.rect(mL,y,cW,6.5,'F');
+  doc.setFontSize(7.5); doc.setFont(undefined,'bold'); doc.setTextColor(26,58,107);
+  doc.text('Rank',cRank,y+4.5);
+  doc.text('SL No.',cSL,y+4.5);
+  doc.text('Candidate Name',cName,y+4.5);
+  doc.text('Total Votes',cVotes,y+4.5);
+  doc.text('Status',cStatus,y+4.5);
+  doc.setTextColor(0); y+=7;
+
+  board.forEach(function(c,i){
+    chk(6.5);
+    var el=(i+1)<=23;
+    if(el){
+      doc.setFillColor(240,253,244);
+    } else {
+      doc.setFillColor(i%2===0?255:249,i%2===0?255:250,i%2===0?255:252);
+    }
+    doc.rect(mL,y,cW,6,'F');
+
+    // Rank badge
+    if(el){
+      doc.setFillColor(21,128,61);
+    } else {
+      doc.setFillColor(107,114,128);
+    }
+    doc.roundedRect(cRank-1,y+0.7,9,4.6,1.2,1.2,'F');
+    doc.setFontSize(7.5); doc.setFont(undefined,'bold'); doc.setTextColor(255);
+    doc.text(String(i+1),cRank+3.5,y+4.3,{align:'center'});
+
+    doc.setFontSize(8); doc.setFont(undefined,'bold');
+    doc.setTextColor(el?20:60, el?60:60, el?20:60);
+    doc.text(String(c.sl),cSL,y+4.2);
+
+    var nm=getCandName(c.sl); if(nm.length>46)nm=nm.substring(0,45)+'…';
+    doc.setFontSize(7.8); doc.setFont(undefined,el?'bold':'normal');
+    doc.setTextColor(el?15:50,el?50:50,el?15:50);
+    doc.text(nm,cName,y+4.2);
+
+    doc.setFontSize(8.5); doc.setFont(undefined,'bold');
+    doc.setTextColor(el?5:60,el?120:60,el?50:60);
+    doc.text(String(c.v),cVotes+8,y+4.5,{align:'right'});
+
+    if(el){
+      doc.setFillColor(21,128,61); doc.roundedRect(cStatus,y+0.8,20,4.2,1.2,1.2,'F');
+      doc.setFontSize(6); doc.setTextColor(255);
+      doc.text('✓ ELECTED',cStatus+10,y+4,{align:'center'});
+    } else {
+      doc.setFontSize(7); doc.setTextColor(150);
+      doc.text('—',cStatus+5,y+4.2);
+    }
+    doc.setTextColor(0); doc.setFont(undefined,'normal'); y+=6.2;
+  });
+
+  // Zero vote candidates note
+  var zeros=[];
+  for(var s=1;s<=149;s++){if(!votes[s]||votes[s]===0)zeros.push(s);}
+  if(zeros.length){
+    chk(12); y+=4;
+    doc.setFillColor(243,244,246); doc.rect(mL,y,cW,8,'F');
+    doc.setFontSize(7.5); doc.setFont(undefined,'bold'); doc.setTextColor(107,114,128);
+    doc.text('Candidates with 0 votes ('+zeros.length+' candidates): SL Nos. — ',mL+3,y+5);
+    y+=9; doc.setFont(undefined,'normal');
+    var zline=zeros.join(', ');
+    var zlines=doc.splitTextToSize(zline,cW-4);
+    zlines.forEach(function(ln){chk(5);doc.setFontSize(7);doc.setTextColor(120);doc.text(ln,mL+3,y);y+=4.5;});
+    y+=3;
+  }
+
+  // ── DISTRICT / BOX WISE RESULTS ──
+  if(distOrder.length>0){
+    distOrder.forEach(function(dist){
+      var dv=distVotes[dist]||{};
+      var dvEntries=Object.entries(dv).map(function(e){return{sl:parseInt(e[0]),v:e[1]};}).sort(function(a,b){return b.v-a.v||a.sl-b.sl;});
+      y+=5; chk(24);
+
+      doc.setFillColor(37,99,235); doc.rect(mL,y,cW,9,'F');
+      // White left accent bar
+      doc.setFillColor(253,224,71); doc.rect(mL,y,3,9,'F');
+      doc.setTextColor(255); doc.setFontSize(10); doc.setFont(undefined,'bold');
+      doc.text('📦  DISTRICT / BOX: '+dist.toUpperCase(),mL+7,y+6);
+      doc.setTextColor(0); doc.setFont(undefined,'normal'); y+=10;
+
+      var distTotal=dists[dist]||0;
+      doc.setFillColor(239,246,255); doc.rect(mL,y,cW,7,'F');
+      doc.setFontSize(8); doc.setTextColor(37,99,235); doc.setFont(undefined,'bold');
+      doc.text('Total ballot entries: '+distTotal,mL+4,y+4.5);
+      doc.setTextColor(100); doc.setFont(undefined,'normal');
+      doc.text('Candidates who received votes: '+dvEntries.length,mL+60,y+4.5);
+      y+=9;
+
+      if(!dvEntries.length){
+        doc.setFontSize(8);doc.setTextColor(150);doc.text('No votes recorded from this box yet.',mL+4,y+4);y+=8;return;
+      }
+
+      chk(7);
+      doc.setFillColor(219,234,254); doc.rect(mL,y,cW,6.5,'F');
+      doc.setFontSize(7.5); doc.setFont(undefined,'bold'); doc.setTextColor(30,60,120);
+      doc.text('Rank',cRank,y+4.5);
+      doc.text('SL No.',cSL,y+4.5);
+      doc.text('Candidate Name',cName,y+4.5);
+      doc.text('Votes (this box)',cVotes-10,y+4.5);
+      doc.setTextColor(0); y+=7;
+
+      dvEntries.forEach(function(c,i){
+        chk(6.5);
+        doc.setFillColor(i%2===0?255:248,i%2===0?255:249,i%2===0?255:255);
+        doc.rect(mL,y,cW,6,'F');
+        // Small rank badge
+        doc.setFillColor(37,99,235); doc.roundedRect(cRank-1,y+0.7,9,4.6,1.2,1.2,'F');
+        doc.setFontSize(7.5); doc.setFont(undefined,'bold'); doc.setTextColor(255);
+        doc.text(String(i+1),cRank+3.5,y+4.3,{align:'center'});
+        doc.setFontSize(8); doc.setTextColor(50);  doc.setFont(undefined,'normal');
+        doc.text(String(c.sl),cSL,y+4.2);
+        var nm=getCandName(c.sl); if(nm.length>46)nm=nm.substring(0,45)+'…';
+        doc.text(nm,cName,y+4.2);
+        doc.setFontSize(9); doc.setFont(undefined,'bold'); doc.setTextColor(37,99,235);
+        doc.text(String(c.v),cVotes,y+4.5);
+        doc.setTextColor(0); doc.setFont(undefined,'normal'); y+=6.2;
+      });
+    });
+  }
+
+  // ── INVALID BALLOTS ──
+  if(invalidBallots.length>0){
+    y+=6; chk(24);
+    doc.setFillColor(185,28,28); doc.rect(mL,y,cW,9,'F');
+    doc.setFillColor(253,224,71); doc.rect(mL,y,3,9,'F');
+    doc.setTextColor(255); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('✕  INVALID BALLOTS — '+invalidBallots.length+' Total',mL+7,y+6);
+    doc.setTextColor(0); doc.setFont(undefined,'normal'); y+=10;
+
+    chk(7);
+    doc.setFillColor(254,226,226); doc.rect(mL,y,cW,6.5,'F');
+    doc.setFontSize(7.5); doc.setFont(undefined,'bold'); doc.setTextColor(150,30,30);
+    doc.text('#',mL+3,y+4.5);
+    doc.text('Ballot No.',mL+14,y+4.5);
+    doc.text('District / Box',mL+50,y+4.5);
+    doc.text('Time',mL+148,y+4.5);
+    doc.setTextColor(0); y+=7;
+
+    invalidBallots.forEach(function(e,i){
+      chk(6.5);
+      doc.setFillColor(i%2===0?255:253,i%2===0?255:242,i%2===0?255:242);
+      doc.rect(mL,y,cW,6,'F');
+      var t=e.time, ts=(t.getHours()<10?'0':'')+t.getHours()+':'+(t.getMinutes()<10?'0':'')+t.getMinutes();
+      doc.setFontSize(7.5); doc.setTextColor(150,30,30); doc.setFont(undefined,'bold');
+      doc.text(String(i+1),mL+3,y+4.2);
+      doc.setFont(undefined,'normal'); doc.setTextColor(80);
+      doc.text(String(e.ballot),mL+14,y+4.2);
+      doc.text(e.dist,mL+50,y+4.2);
+      doc.text(ts,mL+148,y+4.2);
+      doc.setTextColor(0); y+=6.2;
+    });
+  }
+
+  // ── FOOTER ON ALL PAGES with SS Mittalkod stamp ──
+  var totalPages=doc.internal.getNumberOfPages();
+  for(var p=1;p<=totalPages;p++){
+    doc.setPage(p);
+    // Footer bar
+    doc.setFillColor(26,58,107); doc.rect(0,pageH-12,pageW,12,'F');
+    doc.setTextColor(255); doc.setFontSize(6.5); doc.setFont(undefined,'normal');
+    doc.text('Karnataka State Bar Council Election 2026  ·  Confidential Count Document  ·  '+dateStr,mL,pageH-5.5);
+    doc.setFont(undefined,'bold');
+    doc.text('S S MITTALKOD  |  Page '+p+' of '+totalPages,pageW-mR,pageH-5.5,{align:'right'});
+    doc.setTextColor(0);
+  }
+
+  var fname='KSBC-Election-2026-Results-'+now.toISOString().slice(0,10)+'.pdf';
+  doc.save(fname);
+  document.getElementById('pdf-overlay').classList.remove('show');
+}
+
+// ── Reset ──
+function confirmReset() {
+  if (confirm('Delete ALL vote data? This cannot be undone.')) {
+    votes={}; invalidBallots=[]; log=[]; dists={}; distOrder=[]; distVotes={}; curDist='';
+    document.getElementById('hdr-box-val').textContent='Tap to set';
+    if(invMode) toggleInvMode();
+    curVal=''; clearDisp(); setFb('All data reset','neutral');
+    save(); render();
+  }
+}
+
+render(); renderCands();
+</script>
+</body>
+</html>
